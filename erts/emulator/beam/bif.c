@@ -5534,3 +5534,8 @@ BIF_RETTYPE dt_restore_tag_1(BIF_ALIST_1)
 #endif
     BIF_RET(am_true);
 }
+
+BIF_RETTYPE erts_internal_get_heap_1(BIF_ALIST_1)
+{
+    BIF_RET(am_true);
+}
