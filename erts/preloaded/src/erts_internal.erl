@@ -105,6 +105,8 @@
 
 -export([get_internal_state_blocked/1]).
 
+-export([get_heap/1]).
+
 %%
 %% Await result of send to port
 %%
@@ -830,3 +832,6 @@ get_internal_state_blocked(Arg) ->
                  erlang:system_flag(multi_scheduling, unblock)
              end,
     Result.
+
+get_heap(_Pid) ->
+  erlang:nif_error(undef).    
