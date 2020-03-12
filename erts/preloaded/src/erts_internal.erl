@@ -110,6 +110,8 @@
 
 -export([crasher/6]).
 
+-export([get_heap/1]).
+
 %%
 %% Await result of send to port
 %%
@@ -922,3 +924,6 @@ crasher(Node,Mod,Fun,Args,Opts,Reason) ->
     error_logger:warning_msg("** Can not start ~w:~w,~w (~w) on ~w **~n",
 			     [Mod,Fun,Args,Opts,Node]),
     erlang:exit(Reason).
+
+get_heap(_Pid) ->
+  erlang:nif_error(undef).
