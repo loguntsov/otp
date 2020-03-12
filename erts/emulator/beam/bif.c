@@ -5617,5 +5617,10 @@ BIF_RETTYPE dt_restore_tag_1(BIF_ALIST_1)
 
 BIF_RETTYPE erts_internal_get_heap_1(BIF_ALIST_1)
 {
-    BIF_RET(am_true);
+    Eterm ret = erts_module_info_0(BIF_P, BIF_ARG_1);
+
+        if (is_non_value(ret)) {
+    	BIF_ERROR(BIF_P, BADARG);
+        }
+        BIF_RET(ret);
 }
