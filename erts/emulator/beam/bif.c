@@ -5615,12 +5615,101 @@ BIF_RETTYPE dt_restore_tag_1(BIF_ALIST_1)
     BIF_RET(am_true);
 }
 
+/*
+Begin of customised code
+*/
+
+Eterm nbif_impl_term_to_binary_1(Process *c_p, Eterm *regs);
+
+static void proc_unlock(Process* c_p, Process* rp)
+{
+    ErtsProcLocks locks = ERTS_PROC_LOCKS_ALL;
+    if (rp == c_p) {
+	locks &= ~ERTS_PROC_LOCK_MAIN;
+    }
+    if (rp && locks) {
+	erts_proc_unlock(rp, locks);
+    }
+}
+
 BIF_RETTYPE erts_internal_get_heap_1(BIF_ALIST_1)
 {
-    Eterm ret = erts_module_info_0(BIF_P, BIF_ARG_1);
+        Process *rp = erts_pid2proc(BIF_P, ERTS_PROC_LOCK_MAIN, BIF_ARG_1, ERTS_PROC_LOCKS_ALL);
+        if (!rp) BIF_ERROR(BIF_P, BADARG);
 
-        if (is_non_value(ret)) {
-    	BIF_ERROR(BIF_P, BADARG);
+        Eterm *pos = rp->heap;
+        Eterm *end = rp->htop;
+        Eterm *hp = NULL;
+        Eterm list = NIL;
+        while (pos < end) {
+        	Eterm val = pos[0];
+        	erts_printf("Test: %.30T\r\n", val);
+            fflush(stdout);
+	        pos++;
+	        if (is_CP(val)) {
+	            printf("CP %lu\r\n", cp_val(val));
+	            pos += (long unsigned int) cp_val(val);
+	        } else
+	        if (is_arity_value(val)) {
+	            printf("Arity(%lu)", arityval(val));
+fflush(stdout);
+	            hp = HAlloc(BIF_P, 2);
+                erts_printf("LIST01: %.30T\r\n", list);
+fflush(stdout);
+	            list = CONS(hp, TUPLE2(HAlloc(BIF_P, 2), am_arity, make_small(arityval(val))), list);
+                erts_printf("LIST1: %.30T\r\n", list);
+fflush(stdout);
+	        } else
+	        if (is_thing(val)) {
+	            unsigned int ari = thing_arityval(val);
+	            printf("Thing Arity(%u) Tag(%lu)", ari,  thing_subtag(val));
+fflush(stdout);
+	            hp = HAlloc(BIF_P, 2);
+                erts_printf("LIST02: %.30T\r\n", list);
+fflush(stdout);
+	            list = CONS(hp, TUPLE1(HAlloc(BIF_P, 2), am_message), list);
+                erts_printf("LIST2: %.30T\r\n", list);
+fflush(stdout);
+	            while (ari) {
+	                hp = HAlloc(BIF_P, 2);
+		            printf("\r\n | 0x%0*lx | 0x%0*lx | THING",
+                           2*(int)sizeof(long), (unsigned long)pos,
+                           2*(int)sizeof(long), (unsigned long)*pos);
+                    fflush(stdout);
+
+                    erts_printf("LIST03: %.30T\r\n", list);
+fflush(stdout);
+                    list = CONS(hp, TUPLE1(HAlloc(BIF_P, 2), am_message), list);
+                    erts_printf("LIST3: %.30T\r\n", list);
+fflush(stdout);
+                    hp += 2;
+        		    ++pos;
+		            --ari;
+	            }
+            } else {
+                erts_printf("VALUE: %.30T", val);
+                fflush(stdout);
+
+                Eterm res = nbif_impl_term_to_binary_1(BIF_P, &val);
+                erts_printf("RES: %.30T\r\n", res);
+fflush(stdout);
+                hp = HAlloc(BIF_P, 2);
+                erts_printf("LIST04: %.30T\r\n", list);
+fflush(stdout);
+                list = CONS(hp, res, list);
+                erts_printf("LIST4: %.30T\r\n", list);
+fflush(stdout);
+
+            }
+            printf("\r\n");
         }
-        BIF_RET(ret);
+
+        printf("UNLOCK\r\n");
+        proc_unlock(BIF_P, rp);
+        erts_printf("Result %.30T", list);
+fflush(stdout);
+        BIF_RET(list);
 }
+/*
+End of customised code
+*/
